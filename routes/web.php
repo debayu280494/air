@@ -4,36 +4,46 @@ use Illuminate\Support\Facades\Route;
 use App\Livewire\ServiceManager;
 use App\Livewire\CustomerManager;
 use App\Livewire\UsageManager;
+use App\Livewire\BillManager;
+use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\DashboardController;
 
 
-Route::get('/', function () {
-    return redirect('/dashboard');
-});
 
 Route::middleware(['auth'])->group(function () {
 
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // ✅ LAYANAN (Livewire)
+    // Layanan
     Route::get('/layanan', ServiceManager::class)->name('layanan');
 
-    // ✅ HALAMAN LAIN (sementara view biasa dulu)
+    // Pelanggan
     Route::get('/pelanggan', CustomerManager::class)
-    ->middleware(['auth'])
-    ->name('pelanggan');
-    Route::view('/pemakaian', 'pemakaian')->name('pemakaian');
-    Route::view('/tagihan', 'tagihan')->name('tagihan');
+        ->name('pelanggan');
 
-    // Dummy profile (biar tidak error)
+    // Pemakaian
+    Route::get('/pemakaian', UsageManager::class)
+        ->name('pemakaian');
+
+    // Tagihan (Bill Manager)
+    Route::get('/tagihan', BillManager::class)
+        ->name('tagihan');
+
+    Route::get('/tagihan/{id}', [InvoiceController::class, 'show'])
+    ->name('invoice.show');
+
+    Route::get('/tagihan/{id}/pdf', [InvoiceController::class, 'download'])
+    ->name('invoice.pdf');
+
+    // Profile dummy
     Route::get('/profile', function () {
         return 'Profile page';
     })->name('profile.edit');
 
-    Route::get('/pemakaian', UsageManager::class)
-    ->middleware(['auth'])
-    ->name('pemakaian');
+    Route::get('/laporan/bulanan', [ReportController::class, 'monthly'])->name('report.monthly');
+    Route::get('/laporan/bulanan/pdf', [ReportController::class, 'monthlyPdf'])->name('report.monthly.pdf');
+
+    
 
 });
 
