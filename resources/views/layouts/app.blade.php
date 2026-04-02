@@ -19,21 +19,33 @@
 </head>
 
 <body class="font-sans antialiased">
-<div class="min-h-screen bg-gray-100">
+<div class="min-h-screen flex bg-gray-100">
 
-    @include('layouts.navigation')
+    <!-- SIDEBAR -->
+    @include('layouts.sidebar')
 
-    @isset($header)
-        <header class="bg-white shadow">
-            <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                {{ $header }}
-            </div>
-        </header>
-    @endisset
+    <!-- CONTENT -->
+    <div class="flex-1 flex flex-col">
 
-    <main>
-        {{ $slot }}
-    </main>
+        @isset($header)
+            <header class="bg-white shadow">
+                <div class="max-w-7xl mx-auto py-6 px-4">
+                    {{ $header }}
+                </div>
+            </header>
+        @endisset
+
+        <!-- MAIN -->
+        <main class="p-6 flex-1">
+            {{ $slot }}
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="bg-white border-t py-4 text-center text-sm text-gray-400">
+            © {{ date('Y') }} KTS Monitoring — All rights reserved - Made By Karya Satria Advertising
+        </footer>
+
+    </div>
 
 </div>
 

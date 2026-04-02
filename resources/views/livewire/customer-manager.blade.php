@@ -2,7 +2,10 @@
 
     <!-- ================= FILTER ================= -->
     <div class="flex flex-wrap gap-3 items-center bg-white p-4 rounded-lg shadow">
-
+        <button wire:click="openModal"
+            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow">
+            + Tambah
+        </button>
         <input type="text"
             wire:model.live.debounce.300ms="search"
             placeholder="Cari nama..."
@@ -24,7 +27,6 @@
             class="text-sm text-gray-500 hover:text-black">
             Reset Grup
         </button>
-
     </div>
 
     <!-- ================= LOADING ================= -->
@@ -52,74 +54,63 @@
         <span x-text="message"></span>
     </div>
 
-    <!-- ================= BUTTON ================= -->
-    <div class="flex justify-end">
-        <button wire:click="openModal"
-            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow">
-            + Tambah
-        </button>
-    </div>
-
     <!-- ================= TABLE ================= -->
-    <div class="overflow-x-auto bg-white shadow rounded-lg">
+    <div class="overflow-x-auto bg-white shadow-lg rounded-xl border">
 
-        <table class="min-w-full text-sm text-left">
+        <table class="w-full table-fixed text-sm text-gray-700">
 
-            <thead class="bg-gray-100 text-gray-700 uppercase text-xs sticky top-0">
+            <thead class="bg-gray-100 text-xs uppercase sticky top-0 z-10">
                 <tr>
-
-                    <th class="px-4 py-3 cursor-pointer" wire:click="sortBy('name')">
-                        Nama
-                        @if($sortField === 'name')
-                            <span>{{ $sortDirection === 'asc' ? '↑' : '↓' }}</span>
-                        @endif
-                    </th>
-
-                    <th class="px-4 py-3">Alamat</th>
-                    <th class="px-4 py-3">Telepon</th>
-                    <th class="px-4 py-3">Grup</th>
-                    <th class="px-4 py-3">Status</th>
-                    <th class="px-4 py-3">Layanan</th>
-                    <th class="px-4 py-3 text-center">Aksi</th>
-
+                    <th class="w-16 px-4 py-3 text-center">No</th>
+                    <th class="w-40 px-4 py-3 text-left">Nama</th>
+                    <th class="w-56 px-4 py-3 text-left">Alamat</th>
+                    <th class="w-32 px-4 py-3 text-center">Telepon</th>
+                    <th class="w-32 px-4 py-3 text-center">Grup</th>
+                    <th class="w-24 px-4 py-3 text-center">Status</th>
+                    <th class="w-40 px-4 py-3 text-left">Layanan</th>
+                    <th class="w-32 px-4 py-3 text-center">Aksi</th>
                 </tr>
             </thead>
 
-            <tbody class="divide-y divide-gray-200">
+            <tbody class="divide-y divide-gray-100">
 
-                @forelse($customers as $c)
-                <tr wire:key="customer-{{ $c->id }}"
-                    class="hover:bg-gray-50 transition">
+                @forelse($customers as $index => $c)
+                    <tr wire:key="customer-{{ $c->id }}" class="hover:bg-blue-50 even:bg-gray-50">
 
-                    <td class="px-4 py-3 font-medium text-gray-900">
-                        {{ $c->name }}
-                    </td>
+                        <td class="px-4 py-3 text-center">
+                            {{ $customers->firstItem() + $index }}
+                        </td>
 
-                    <td class="px-4 py-3">
-                        {{ $c->address ?? '-' }}
-                    </td>
+                        <td class="px-4 py-3 font-medium">
+                            {{ $c->name }}
+                        </td>
 
-                    <td class="px-4 py-3">
-                        {{ $c->phone ?? '-' }}
-                    </td>
+                        <td class="px-4 py-3 truncate max-w-[200px]">
+                            {{ $c->address ?? '-' }}
+                        </td>
 
-                    <td class="px-4 py-3">
-                        {{ $c->group_name ?? '-' }}
-                    </td>
+                        <td class="px-4 py-3 text-center">
+                            {{ $c->phone ?? '-' }}
+                        </td>
 
-                    <td class="px-4 py-3">
-                        <span class="px-2 py-1 text-xs rounded 
-                            {{ $c->status === 'aktif' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">
-                            {{ ucfirst($c->status) }}
-                        </span>
-                    </td>
+                        <td class="px-4 py-3 text-center">
+                            {{ $c->group_name ?? '-' }}
+                        </td>
 
-                    <td class="px-4 py-3">
-                        {{ $c->service->name ?? '-' }}
-                    </td>
+                        <td class="px-4 py-3 text-center">
+                            <span class="px-2 py-1 text-xs rounded-full
+                                {{ $c->status === 'aktif'
+                                    ? 'bg-green-100 text-green-700'
+                                    : 'bg-red-100 text-red-700' }}">
+                                {{ ucfirst($c->status) }}
+                            </span>
+                        </td>
 
-                    <td class="px-4 py-3">
-                        <div class="flex justify-center gap-2">
+                        <td class="px-4 py-3">
+                            {{ optional($c->service)->name ?? '-' }}
+                        </td>
+
+                        <td class="px-4 py-3 text-center flex justify-center gap-2">
 
                             <button wire:click="edit({{ $c->id }})"
                                 class="bg-yellow-500 hover:bg-yellow-600 text-white text-xs px-3 py-1 rounded">
@@ -131,14 +122,13 @@
                                 Hapus
                             </button>
 
-                        </div>
-                    </td>
+                        </td>
 
-                </tr>
-                @empty
+                    </tr>
+                    @empty
                 <tr>
-                    <td colspan="7" class="text-center py-6 text-gray-500">
-                        Data kosong
+                    <td colspan="8" class="text-center py-6 text-gray-500">
+                        Data tidak ditemukan
                     </td>
                 </tr>
                 @endforelse
@@ -146,11 +136,12 @@
             </tbody>
 
         </table>
+
     </div>
 
     <!-- ================= PAGINATION ================= -->
     <div class="mt-4">
-        {{ $customers->links() }}
+        {{ $customers->links('pagination::tailwind') }}
     </div>
 
     <!-- ================= MODAL ================= -->
@@ -178,8 +169,8 @@
 
             <select wire:model="service_id" class="w-full border p-2 mb-2 rounded">
                 <option value="">Pilih Layanan</option>
-                @foreach($services as $s)
-                    <option value="{{ $s->id }}">{{ $s->name }}</option>
+                @foreach($services as $id => $name)
+                    <option value="{{ $id }}">{{ $name }}</option>
                 @endforeach
             </select>
 

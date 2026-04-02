@@ -4,13 +4,15 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\WithoutUrlPagination;
 use Livewire\Attributes\On;
 use App\Models\Customer;
 use App\Models\Service;
+use Illuminate\Support\Facades\DB;
 
 class CustomerManager extends Component
 {
-    use WithPagination;
+    use WithPagination, WithoutUrlPagination;
 
     protected $paginationTheme = 'tailwind';
 
@@ -45,13 +47,32 @@ class CustomerManager extends Component
         'phone' => 'nullable|string|max:20',
         'address' => 'nullable|string|max:255',
         'group_name' => 'nullable|string|max:100',
-        'status' => 'required|in:aktif,nonaktif',
+        'status' => 'required|in:' . Customer::STATUS_AKTIF . ',' . Customer::STATUS_NONAKTIF,
         'service_id' => 'nullable|exists:services,id',
     ];
 
     public function mount()
     {
-        $this->services = Service::select('id','name')->get();
+        $this->services = Service::pluck('name', 'id');
+    }
+
+    private function getCustomers()
+    {
+        return Customer::query()
+            ->with('service:id,name')
+            ->when($this->search, function ($q) {
+                $q->where(function ($q) {
+                    $q->where('name', 'like', "%{$this->search}%")
+                    ->orWhere('phone', 'like', "%{$this->search}%");
+                });
+            })
+            ->when($this->filterGroup, fn($q) =>
+                $q->where('group_name', 'like', "%{$this->filterGroup}%")
+            )
+            ->when($this->filterStatus, fn($q) =>
+                $q->where('status', $this->filterStatus)
+            )
+            ->orderBy($this->sortField, $this->sortDirection);
     }
 
     public function render()
@@ -60,29 +81,10 @@ class CustomerManager extends Component
             $this->sortField = 'created_at';
         }
 
-        $customers = Customer::select('id','name','address','phone','group_name','status','service_id','created_at')
-            ->with('service:id,name')
-            ->when($this->search, fn($q) =>
-                $q->where(function($q){
-                    $q->where('name','like','%'.$this->search.'%')
-                      ->orWhere('phone','like','%'.$this->search.'%');
-                })
-            )
-            ->when($this->filterGroup, fn($q) =>
-                $q->whereRaw('LOWER(TRIM(group_name)) = ?', [strtolower(trim($this->filterGroup))])
-            )
-            ->when($this->filterStatus, fn($q) =>
-                $q->where('status', $this->filterStatus)
-            )
-            ->orderBy($this->sortField, $this->sortDirection)
-            ->paginate(10);
+        $customers = $this->getCustomers()->paginate(10);
 
         return view('livewire.customer-manager', compact('customers'));
     }
-
-    public function updatedSearch() { $this->resetPage(); }
-    public function updatedFilterGroup() { $this->resetPage(); }
-    public function updatedFilterStatus() { $this->resetPage(); }
 
     public function sortBy($field)
     {
@@ -94,6 +96,8 @@ class CustomerManager extends Component
             $this->sortField = $field;
             $this->sortDirection = 'asc';
         }
+
+        $this->gotoPage(1);
     }
 
     public function openModal()
@@ -124,36 +128,26 @@ class CustomerManager extends Component
             ? ucwords(strtolower(trim($this->group_name)))
             : null;
 
-        if ($this->editId) {
+        DB::transaction(function () {
 
-            Customer::findOrFail($this->editId)->update([
-                'name' => $this->name,
-                'address' => $this->address,
-                'phone' => $this->phone,
-                'group_name' => $this->group_name,
-                'status' => $this->status,
-                'service_id' => $this->service_id,
-            ]);
+            Customer::updateOrCreate(
+                ['id' => $this->editId],
+                [
+                    'name' => $this->name,
+                    'address' => $this->address,
+                    'phone' => $this->phone,
+                    'group_name' => $this->group_name,
+                    'status' => $this->status,
+                    'service_id' => $this->service_id,
+                ]
+            );
 
-            $this->toast('success', 'Data berhasil diupdate');
+        });
 
-        } else {
-
-            Customer::create([
-                'customer_code' => $this->generateCode(),
-                'name' => $this->name,
-                'address' => $this->address,
-                'phone' => $this->phone,
-                'group_name' => $this->group_name,
-                'status' => $this->status,
-                'service_id' => $this->service_id,
-            ]);
-
-            $this->toast('success', 'Data berhasil ditambahkan');
-        }
+        $this->toast('success', $this->editId ? 'Data berhasil diupdate' : 'Data berhasil ditambahkan');
 
         $this->closeModal();
-        $this->resetPage();
+        $this->gotoPage(1);
     }
 
     public function edit($id)
@@ -180,31 +174,11 @@ class CustomerManager extends Component
     #[On('delete-confirmed')]
     public function deleteConfirmed($id)
     {
-        $customer = Customer::find($id);
+        Customer::findOrFail($id)->delete();
 
-        if (!$customer) {
-            $this->toast('error', 'Data tidak ditemukan');
-            return;
-        }
+        $this->gotoPage(1);
 
-        $customer->delete();
-
-        $this->resetPage();
-        $this->toast('success', 'Data berhasil dihapus');
-    }
-
-    public function generateCode()
-    {
-        $lastCode = Customer::max('customer_code');
-
-        if (!$lastCode) {
-            return 'C001';
-        }
-
-        $number = (int) str_replace('C', '', $lastCode);
-        $number++;
-
-        return 'C' . str_pad($number, 3, '0', STR_PAD_LEFT);
+        $this->toast('success', 'Customer berhasil dihapus');
     }
 
     private function toast($type, $message)
@@ -213,5 +187,12 @@ class CustomerManager extends Component
             'type' => $type,
             'message' => $message
         ]);
+    }
+
+    public function updating($name)
+    {
+        if (in_array($name, ['search', 'filterGroup', 'filterStatus'])) {
+            $this->gotoPage(1);
+        }
     }
 }

@@ -7,8 +7,6 @@ use Livewire\WithPagination;
 use App\Models\Usage;
 use App\Models\Customer;
 use App\Models\Bill;
-use Illuminate\Pagination\LengthAwarePaginator;
-
 
 class UsageManager extends Component
 {
@@ -16,12 +14,19 @@ class UsageManager extends Component
 
     protected $paginationTheme = 'tailwind';
 
+    protected $queryString = [
+        'search' => ['except' => ''],
+        'filterMonth' => ['except' => ''],
+        'filterYear' => ['except' => ''],
+        'filterStatus' => ['except' => ''],
+        'filterGroup' => ['except' => ''],
+    ];
+
     public $customers = [];
     public $groups = [];
-    
     public $years = [];
 
-    // FILTER + SEARCH
+    // FILTER
     public $search = '';
     public $filterMonth = '';
     public $filterYear = '';
@@ -34,107 +39,92 @@ class UsageManager extends Component
     public $month;
     public $year;
 
-    public $meter_start = 0;
+    public $meter_start;
     public $meter_end;
     public $usagePreview = 0;
 
+    public $meterReadonly = false;
+    public $duplicateWarning = false;
+
     public $keterangan;
     public $isOpen = false;
-
-    public $duplicateWarning = false;
+    public $isEdit = false;
 
     protected $listeners = ['delete-confirmed' => 'deleteConfirmed'];
 
+    public function getLastUsageIdsProperty()
+    {
+        return Usage::getLastIds();
+    }
+    
     public function mount()
     {
-        $this->customers = Customer::where('status', 'aktif')->get();
+        $this->customers = Customer::where('status', 'aktif')
+        ->orderBy('name', 'asc')
+        ->get();
 
-        // 🔥 ambil group unik
         $this->groups = Customer::select('group_name')
             ->whereNotNull('group_name')
             ->distinct()
             ->pluck('group_name');
 
         $currentYear = date('Y');
+
         for ($i = $currentYear - 5; $i <= $currentYear + 5; $i++) {
             $this->years[] = $i;
         }
     }
 
+    // ================= FILTER RESET =================
     public function updating($name)
     {
-        $this->resetPage();
+        if (in_array($name, ['search','filterMonth','filterYear','filterStatus','filterGroup'])) {
+            $this->resetPage();
+        }
     }
 
-    private function isFiltering()
-    {
-        return $this->search 
-            || $this->filterGroup 
-            || $this->filterMonth 
-            || $this->filterYear 
-            || $this->filterStatus;
-    }
-    // ================= LOAD DATA =================
+    // ================= DATA =================
     public function getUsagesProperty()
     {
-        $query = Usage::with(['customer', 'bill'])
-
+        return $this->buildUsageQuery()
+            ->orderByDesc('id')
+            ->paginate(10);
+    }
+    private function buildUsageQuery()
+    {
+        return Usage::query()
+            ->select('id','customer_id','month','year','meter_start','meter_end','usage','total_bill')
+            ->with([
+                'customer:id,name,group_name',
+                'bill:id,usage_id,status'
+            ])
             ->when($this->search, function ($q) {
-                $q->whereHas('customer', fn($c) =>
-                    $c->where('name', 'like', "%{$this->search}%")
-                );
+                $q->whereHas('customer', function ($c) {
+                    $c->where('name', 'like', '%' . $this->search . '%');
+                });
             })
-            ->when($this->filterGroup, function ($q) {
+            ->when($this->filterGroup, fn($q) =>
                 $q->whereHas('customer', fn($c) =>
                     $c->where('group_name', $this->filterGroup)
-                );
-            })
+                )
+            )
             ->when($this->filterMonth, fn($q) =>
                 $q->where('month', $this->filterMonth)
             )
             ->when($this->filterYear, fn($q) =>
                 $q->where('year', $this->filterYear)
             )
-            ->when($this->filterStatus, function ($q) {
+            ->when($this->filterStatus, fn($q) =>
                 $q->whereHas('bill', fn($b) =>
                     $b->where('status', $this->filterStatus)
-                );
-            });
-
-        // 🔥 SORTING UTAMA
-        if ($this->isFiltering()) {
-            // kalau ada filter → urut nama
-            $query->join('customers', 'usages.customer_id', '=', 'customers.id')
-                ->orderBy('customers.name', 'asc')
-                ->select('usages.*');
-        } else {
-            // kalau tidak ada filter → urut data terbaru
-            $query->orderByDesc('id'); // 🔥 PALING AMAN
-        }
-
-        $data = $query->get();
-
-        $latestIds = [];
-
-        foreach ($data->groupBy('customer_id') as $items) {
-            $latestIds[] = $items->first()->id;
-        }
-
-        $data = $data->map(function ($item) use ($latestIds) {
-            $item->is_last = in_array($item->id, $latestIds);
-            return $item;
-        });
-
-        return $this->paginateCollection($data, 10);
+                )
+            );
     }
 
-    // ================= FORM CHANGE =================
-    public function updated($name, $value)
+    public function updated($name)
     {
-        $this->{$name} = $value;
-
-        if (in_array($name, ['customer_id', 'month', 'year'])) {
-            $this->setMeterStart();
+        if (in_array($name, ['customer_id','month','year'])) {
+            $this->updateMeterStart();
             $this->checkDuplicate();
         }
 
@@ -143,117 +133,85 @@ class UsageManager extends Component
         }
     }
 
-    // ================= EDIT =================
-    public function edit($id)
-    {
-        $data = Usage::find($id);
-        if (!$data) return;
 
-        $bill = Bill::where('usage_id', $data->id)->first();
-
-        // ❗ CEGAH EDIT jika sudah lunas
-        if ($bill && $bill->status === 'lunas') {
-            $this->addError('edit', 'Data sudah lunas, tidak bisa diedit!');
-            return;
-        }
-
-        $last = Usage::where('customer_id', $data->customer_id)
-            ->orderBy('year', 'desc')
-            ->orderBy('month', 'desc')
-            ->first();
-
-        if ($last->id !== $data->id) {
-            $this->addError('edit', 'Hanya data terakhir yang bisa diedit!');
-            return;
-        }
-
-        $this->resetErrorBag();
-
-        $this->usage_id = $data->id;
-        $this->customer_id = $data->customer_id;
-        $this->month = $data->month;
-        $this->year = $data->year;
-        $this->meter_start = $data->meter_start;
-        $this->meter_end = $data->meter_end;
-        $this->keterangan = $data->keterangan;
-
-        $this->calculate();
-        $this->isOpen = true;
-    }
-
-    // ================= DUPLIKAT =================
-    private function checkDuplicate()
+    // ================= LOGIC =================
+    private function updateMeterStart()
     {
         if (!$this->customer_id || !$this->month || !$this->year) {
-            $this->duplicateWarning = false;
+            $this->meter_start = null;
+            $this->meterReadonly = false;
             return;
         }
 
-        $this->duplicateWarning = Usage::where('customer_id', $this->customer_id)
-            ->where('month', $this->month)
-            ->where('year', $this->year)
-            ->when($this->usage_id, fn($q) => $q->where('id', '!=', $this->usage_id))
-            ->exists();
-    }
+        $last = Usage::lastByCustomer($this->customer_id);
 
-    // ================= METER START =================
-    private function setMeterStart()
-    {
-        if (!$this->customer_id || !$this->month || !$this->year) {
-            $this->meter_start = 0;
-            return;
-        }
+        $this->meter_start = $last ? (int) $last->meter_end : 0;
 
-        $last = Usage::where('customer_id', $this->customer_id)
-            ->where(function ($q) {
-                $q->where('year', '<', $this->year)
-                  ->orWhere(function ($q2) {
-                      $q2->where('year', $this->year)
-                         ->where('month', '<', $this->month);
-                  });
-            })
-            ->orderByDesc('year')
-            ->orderByDesc('month')
-            ->first();
-
-        $this->meter_start = $last ? (int)$last->meter_end : 0;
-        $this->calculate();
+        $this->meterReadonly = $this->isEdit || $last;
     }
 
     private function calculate()
     {
-        $this->usagePreview = $this->meter_end
-            ? max(0, (int)$this->meter_end - (int)$this->meter_start)
-            : 0;
+        $this->usagePreview = max(
+            0,
+            (int) $this->meter_end - (int) $this->meter_start
+        );
     }
+
 
     // ================= SAVE =================
     public function save()
     {
+        $this->validateData();
+
+        if ($this->isDuplicateData()) return;
+
+        if (!$this->isEdit && !$this->isNextMonthValid()) return;
+
+        $this->storeUsage();
+
+        $this->closeModal();
+        $this->resetPage();
+        $this->resetFilter();
+    }
+
+    private function validateData()
+    {
         $this->validate([
-            'customer_id' => 'required',
+            'customer_id' => 'required|exists:customers,id',
             'month' => 'required|numeric|min:1|max:12',
             'year' => 'required|numeric',
-            'meter_end' => 'required|numeric',
+            'meter_end' => [
+                'required',
+                'numeric',
+                function ($attr, $value, $fail) {
+                    if ($this->meter_start !== null && $value < $this->meter_start) {
+                        $fail('Meter akhir tidak boleh lebih kecil dari meter awal.');
+                    }
+                }
+            ]
         ]);
+    }
 
-        if ($this->duplicateWarning) {
+    private function isDuplicateData()
+    {
+        if (Usage::isDuplicate(
+            $this->customer_id,
+            $this->month,
+            $this->year,
+            $this->usage_id
+        )) {
             $this->addError('month', 'Data bulan ini sudah ada');
-            return;
+            return true;
         }
 
-        if (!$this->validateSequence()) {
-            $this->addError('month', 'Harus bulan berikutnya dari data terakhir');
-            return;
-        }
+        return false;
+    }
 
-        if ((int)$this->meter_end < (int)$this->meter_start) {
-            $this->addError('meter_end', 'Meter akhir tidak boleh lebih kecil');
-            return;
-        }
-
-        $usage = $this->meter_end - $this->meter_start;
-        $total = $usage * 5000;
+    private function storeUsage()
+    {
+        $usageValue = $this->meter_end - $this->meter_start;
+        $total = $usageValue * 5000;
 
         $usage = Usage::updateOrCreate(
             ['id' => $this->usage_id],
@@ -263,42 +221,72 @@ class UsageManager extends Component
                 'year' => $this->year,
                 'meter_start' => $this->meter_start,
                 'meter_end' => $this->meter_end,
-                'usage' => $usage,
+                'usage' => $usageValue,
                 'total_bill' => $total,
                 'keterangan' => $this->keterangan,
             ]
         );
 
-        // 🔥 SIMPAN / UPDATE BILL
         Bill::updateOrCreate(
-            ['usage_id' => $usage->id], // ✅ pakai $usage
+            ['usage_id' => $usage->id],
             [
                 'customer_id' => $this->customer_id,
                 'month' => $this->month,
                 'year' => $this->year,
                 'total_bill' => $total,
                 'status' => 'belum',
-                'invoice_number' => 'INV-' . date('Ymd') . '-' . str_pad(rand(1,9999), 4, '0', STR_PAD_LEFT),
             ]
         );
-
-        $this->closeModal();
     }
 
-    private function validateSequence()
+    private function isNextMonthValid()
     {
-        $last = Usage::where('customer_id', $this->customer_id)
-            ->orderByDesc('year')
-            ->orderByDesc('month')
-            ->first();
+        if (!Usage::isNextMonthValid(
+            $this->customer_id,
+            $this->year,
+            $this->month
+        )) {
+            $this->addError('month', 'Harus bulan berikutnya dari data terakhir');
+            return false;
+        }
 
-        if (!$last) return true;
+        return true;
+    }
 
-        $lastMonthIndex = ($last->year * 12) + $last->month;
-        $currentMonthIndex = ($this->year * 12) + $this->month;
+    // ================= EDIT =================
+    public function edit($id)
+    {
+        $data = Usage::findOrFail($id);
 
-        // 🔥 HARUS SELISIH = 1 BULAN
-        return $currentMonthIndex === ($lastMonthIndex + 1);
+        if ($data->bill && $data->bill->status === 'lunas') {
+            $this->addError('edit', 'Data sudah lunas!');
+            return;
+        }
+
+        $last = Usage::lastByCustomer($data->customer_id);
+
+        if (!$last || $last->id !== $data->id) {
+            $this->addError('edit', 'Hanya data terakhir!');
+            return;
+        }
+
+        $this->fill([
+            'usage_id' => $data->id,
+            'customer_id' => $data->customer_id,
+            'month' => $data->month,
+            'year' => $data->year,
+            'meter_start' => $data->meter_start,
+            'meter_end' => $data->meter_end,
+            'keterangan' => $data->keterangan,
+        ]);
+
+        $this->isEdit = true;
+        $this->meterReadonly = true;
+        $this->isOpen = true;
+
+        $this->calculate();
+
+        $this->resetPage();
     }
 
     // ================= DELETE =================
@@ -312,22 +300,19 @@ class UsageManager extends Component
         $target = Usage::find($id);
         if (!$target) return;
 
-        $bill = Bill::where('usage_id', $target->id)->first();
-
-        // ❗ CEGAH kalau sudah lunas
-        if ($bill && $bill->status === 'lunas') {
+        if ($target->bill && $target->bill->status === 'lunas') {
             $this->addError('delete', 'Tidak bisa hapus, sudah lunas!');
             return;
         }
 
-        // ❗ OPTIONAL: hapus bill dulu kalau belum lunas
-        if ($bill) {
-            $bill->delete();
+        if ($target->bill) {
+            $target->bill->delete();
         }
 
         $target->delete();
     }
 
+    // ================= MODAL =================
     public function openModal()
     {
         $this->resetForm();
@@ -352,24 +337,60 @@ class UsageManager extends Component
             'meter_end',
             'usagePreview',
             'keterangan',
-            'duplicateWarning'
         ]);
+
+        $this->isEdit = false;
+        $this->meterReadonly = false;
     }
 
-    private function paginateCollection($items, $perPage)
+    private function checkDuplicate()
     {
-        $page = request()->get('page', 1);
+        if (!$this->customer_id || !$this->month || !$this->year) {
+            $this->duplicateWarning = false;
+            return;
+        }
 
-        $offset = ($page - 1) * $perPage;
-
-        return new LengthAwarePaginator(
-            $items->slice($offset, $perPage),
-            $items->count(),
-            $perPage,
-            $page,
-            ['path' => request()->url(), 'query' => request()->query()]
+        $this->duplicateWarning = Usage::isDuplicate(
+            $this->customer_id,
+            $this->month,
+            $this->year,
+            $this->usage_id
         );
     }
+
+    public function getMonthsProperty()
+    {
+        return [
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember'
+        ];
+    }
+
+    
+
+    public function resetFilter()
+    {
+        $this->reset([
+            'search',
+            'filterMonth',
+            'filterYear',
+            'filterStatus',
+            'filterGroup',
+        ]);
+
+        $this->resetPage();
+    }
+   
 
     public function render()
     {
