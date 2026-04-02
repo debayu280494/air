@@ -5,18 +5,16 @@ nixPkgs = ["nodejs_20", "phpPackages.composer"]
 
 [phases.install]
 cmds = [
-  "composer install --no-dev --optimize-autoloader",
-  "npm install",
-  "npm run build"
+  "composer install --no-dev --optimize-autoloader"
 ]
 
 [phases.build]
 cmds = [
+  "php artisan migrate --force",
   "php artisan config:cache",
   "php artisan route:cache",
-  "php artisan view:cache",
   "chmod -R 775 storage bootstrap/cache"
 ]
 
 [start]
-cmd = "php -S 0.0.0.0:8000 -t public"
+cmd = "php artisan serve --host=0.0.0.0 --port=8000"
