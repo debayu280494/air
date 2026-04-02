@@ -1,11 +1,5 @@
 providers = ["php"]
 
-[variables]
-NIXPACKS_NODE = "false"
-
-[phases.setup]
-nixPkgs = ["phpPackages.composer"]
-
 [phases.install]
 cmds = [
   "composer install --no-dev --optimize-autoloader"
@@ -15,9 +9,8 @@ cmds = [
 cmds = [
   "php artisan config:cache",
   "php artisan route:cache",
-  "php artisan view:cache",
-  "chmod -R 775 storage bootstrap/cache"
+  "php artisan view:cache"
 ]
 
 [start]
-cmd = "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000"
+cmd = "php artisan serve --host=0.0.0.0 --port=8000"
