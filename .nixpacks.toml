@@ -1,2 +1,4 @@
+providers = ["php"]
+
 [phases.setup]
 nixPkgs = ["nodejs_20", "phpPackages.composer"]
