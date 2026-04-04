@@ -8,6 +8,10 @@
 <body class="bg-gray-100 flex items-center justify-center h-screen">
 
 <div class="bg-white p-6 rounded shadow w-96">
+    <div class="text-center mb-4">
+        <img src="{{ asset('images/logo.png') }}" class="h-12 mx-auto mb-2">
+        <div class="text-lg font-bold">KTS Monitoring</div>
+    </div>
     <h2 class="text-xl mb-4 font-bold text-center">Login</h2>
 
     @if (session('status'))
