@@ -111,6 +111,7 @@
     <hr>
 
     <p><b>Customer:</b> {{ $bill->customer->name }}</p>
+    <p><b>Grup:</b> {{ $bill->customer->group_name ?? '-' }}</p>
     <p><b>Periode:</b> 
         {{ \Carbon\Carbon::create()->month($bill->month)->translatedFormat('F') }} {{ $bill->year }}
     </p>
