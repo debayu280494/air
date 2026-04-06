@@ -1,7 +1,7 @@
 <div class="p-6 space-y-6">
 
     <!-- FILTER -->
-    <div class="flex gap-3">
+    <div class="flex gap-3 items-center">
         <select wire:model.live="month" class="border p-2 rounded">
             <option value="">Semua Bulan</option>
             @php
@@ -24,116 +24,83 @@
             @endfor
         </select>
 
-        <button wire:click="export"
-            class="bg-green-600 text-white px-4 py-2 rounded">
-            Export Excel
+        <button onclick="exportPdf()" class="bg-green-600 text-white px-4 py-2 rounded">
+            Export PDF
         </button>
     </div>
+
     <!-- SUMMARY -->
     <div class="grid md:grid-cols-3 gap-4">
-        <div class="bg-blue-500 text-white p-4 rounded-xl shadow-lg">
-            <p class="text-sm">Total</p>
-            <p class="text-lg font-bold">
-                Rp {{ number_format($total,0,',','.') }}
-            </p>
+        <div class="bg-blue-500 text-white p-4 rounded-xl shadow">
+            <p>Total</p>
+            <p class="text-xl font-bold">Rp {{ number_format($total,0,',','.') }}</p>
         </div>
 
-        <div class="bg-red-500 text-white p-4 rounded-xl shadow-lg">
-            <p class="text-sm">Belum</p>
-            <p class="text-lg font-bold">
-                Rp {{ number_format($belum,0,',','.') }}
-            </p>
+        <div class="bg-red-500 text-white p-4 rounded-xl shadow">
+            <p>Belum</p>
+            <p class="text-xl font-bold">Rp {{ number_format($belum,0,',','.') }}</p>
         </div>
 
-        <div class="bg-green-500 text-white p-4 rounded-xl shadow-lg">
-            <p class="text-sm">Lunas</p>
-            <p class="text-lg font-bold">
-                Rp {{ number_format($lunas,0,',','.') }}
-            </p>
+        <div class="bg-green-500 text-white p-4 rounded-xl shadow">
+            <p>Lunas</p>
+            <p class="text-xl font-bold">Rp {{ number_format($lunas,0,',','.') }}</p>
         </div>
     </div>
 
-    <!-- CHART -->
+    <!-- PIE -->
     <div class="bg-white p-4 rounded shadow">
         <h2 class="font-bold mb-3">Pie Chart Customer</h2>
         <div class="flex justify-center">
-            <div class="w-64 h-64">
+            <div class="w-[500px] h-[400px]">
                 <canvas id="pieChart"></canvas>
             </div>
         </div>
     </div>
 
-    <!-- BAR CHART -->
+    <!-- BAR TAGIHAN -->
     <div class="bg-white p-4 rounded shadow">
-        <h2 class="font-bold mb-3">Grafik Pemasukan Bulanan</h2>
-        <div class="w-full h-64">
+        <h2 class="font-bold mb-3">Grafik Tagihan Bulanan</h2>
+        <div class="w-full h-[300px]">
             <canvas id="barChart"></canvas>
         </div>
     </div>
 
+    <!-- BAR PEMASUKAN -->
+    <div class="bg-white p-4 rounded shadow">
+        <h2 class="font-bold mb-3">Grafik Revenue (Paid At)</h2>
+        <div class="w-full h-[300px]">
+            <canvas id="incomeChart"></canvas>
+        </div>
+    </div>
+
     <!-- GROUP -->
-    <div class="bg-white p-4 rounded-xl shadow">
+    <div class="bg-white p-4 rounded shadow">
         <h2 class="font-bold mb-4">Statistik per Group</h2>
 
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             @foreach($groupCustomers as $g)
-                <div class="bg-white rounded-xl shadow p-4 space-y-3 hover:shadow-xl transition duration-300">
+                <div class="p-4 border rounded shadow space-y-2">
 
-                    <!-- HEADER -->
-                    <div class="flex justify-between items-center">
-                        <h3 class="font-bold text-lg">
-                            {{ $g->group_name ?? '-' }}
-                        </h3>
+                    <div class="flex justify-between">
+                        <h3 class="font-bold">{{ $g->group_name ?? '-' }}</h3>
                         <span class="text-sm text-gray-500">
-                            {{ $g->total_customer }} Customer
+                            {{ $g->total_customer }} Cust
                         </span>
                     </div>
 
-                    <!-- INVOICE -->
-                    <div class="grid grid-cols-3 text-center text-sm">
-                        <div>
-                            <p class="text-gray-400">Total</p>
-                            <p class="font-semibold">{{ $g->total_invoice }}</p>
-                        </div>
-                        <div>
-                            <p class="text-green-500">Lunas</p>
-                            <p class="font-semibold text-green-600">{{ $g->invoice_lunas }}</p>
-                        </div>
-                        <div>
-                            <p class="text-red-500">Belum</p>
-                            <p class="font-semibold text-red-600">{{ $g->invoice_belum }}</p>
-                        </div>
+                    <div class="text-sm">
+                        <p>Total Invoice: {{ $g->total_invoice }}</p>
+                        <p class="text-green-600">Lunas: {{ $g->invoice_lunas }}</p>
+                        <p class="text-red-500">Belum: {{ $g->invoice_belum }}</p>
                     </div>
 
-                    <!-- KEUANGAN -->
-                    <div class="space-y-1 text-sm border-t pt-2">
-
-                        <div class="flex justify-between">
-                            <span class="text-gray-500">Uang Masuk</span>
-                            <span class="text-green-600 font-semibold">
-                                Rp {{ number_format($g->total_lunas,0,',','.') }}
-                            </span>
-                        </div>
-
-                        <div class="flex justify-between">
-                            <span class="text-gray-500">Piutang</span>
-                            <span class="text-red-500 font-semibold">
-                                Rp {{ number_format($g->total_belum,0,',','.') }}
-                            </span>
-                        </div>
-
-                        <div class="flex justify-between border-t pt-1 font-bold">
-                            <span>Total</span>
-                            <span>
-                                Rp {{ number_format($g->total_semua,0,',','.') }}
-                            </span>
-                        </div>
-
+                    <div class="border-t pt-2 text-sm">
+                        <p>Total: Rp {{ number_format($g->total_semua,0,',','.') }}</p>
                     </div>
 
                 </div>
             @endforeach
-            </div>
+        </div>
     </div>
 
 </div>
@@ -141,75 +108,74 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-    let pieChart;
-    let barChart;
+let pieChart, barChart, incomeChart;
 
-    document.addEventListener('livewire:init', () => {
+document.addEventListener('livewire:init', () => {
 
-        Livewire.on('updateCharts', (event) => {
+    Livewire.on('updateCharts', (event) => {
+        const data = event[0];
 
-            const data = event[0] ?? {}; // 🔥 WAJIB (fix Livewire v3)
-
-            const pieLabels = data.pieLabels ?? [];
-            const pieData   = data.pieData ?? [];
-            const barLabels = data.barLabels ?? [];
-            const barData   = data.barData ?? [];
-
-            console.log('CHART DATA:', data);
-
-            // PIE
-            const pieCtx = document.getElementById('pieChart');
-
-            if (pieChart) pieChart.destroy();
-
-            pieChart = new Chart(pieCtx, {
-                type: 'pie',
-                data: {
-                    labels: pieLabels,
-                    datasets: [{
-                        data: pieData,
-                        backgroundColor: [
-                            '#3b82f6',
-                            '#22c55e',
-                            '#ef4444',
-                            '#f59e0b',
-                            '#8b5cf6'
-                        ]
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false
+        // ================= PIE =================
+        if (pieChart) pieChart.destroy();
+        pieChart = new Chart(document.getElementById('pieChart'), {
+            type: 'pie',
+            data: {
+                labels: data.pieLabels,
+                datasets: [{
+                    data: data.pieData
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right' }
                 }
-            });
+            }
+        });
 
-            // BAR
-            const barCtx = document.getElementById('barChart');
+        // ================= TAGIHAN =================
+        if (barChart) barChart.destroy();
+        barChart = new Chart(document.getElementById('barChart'), {
+            type: 'bar',
+            data: {
+                labels: data.barLabels,
+                datasets: [{
+                    label: 'Tagihan',
+                    data: data.barData
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
 
-            if (barChart) barChart.destroy();
-
-            barChart = new Chart(barCtx, {
-                type: 'bar',
-                data: {
-                    labels: barLabels.map(b => {
-                        const bulan = [
-                            'Jan','Feb','Mar','Apr','Mei','Jun',
-                            'Jul','Agu','Sep','Okt','Nov','Des'
-                        ];
-                        return bulan[b-1];
-                    }),
-                    datasets: [{
-                        label: 'Pemasukan',
-                        data: barData
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false
-                }
-            });
-
+        // ================= PEMASUKAN =================
+        if (incomeChart) incomeChart.destroy();
+        incomeChart = new Chart(document.getElementById('incomeChart'), {
+            type: 'bar',
+            data: {
+                labels: data.incomeLabels,
+                datasets: [{
+                    label: 'Pemasukan',
+                    data: data.incomeData
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
         });
 
     });
+
+});
+
+// EXPORT
+function exportPdf() {
+    const pieImage = pieChart.toBase64Image();
+    const barImage = barChart.toBase64Image();
+    const incomeImage = incomeChart.toBase64Image(); // 🔥 TAMBAH INI
+
+    Livewire.dispatch('exportPdfWithCharts', {
+        pie: pieImage,
+        bar: barImage,
+        income: incomeImage // 🔥 TAMBAH INI
+    });
+}
 </script>
