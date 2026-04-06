@@ -10,6 +10,7 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\BillController;
+use App\Http\Controllers\UsageController;
 
 // 🔥 ROOT DOMAIN (FIX 404)
 Route::get('/', function () {
@@ -45,7 +46,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/laporan/bulanan/pdf', [ReportController::class, 'monthlyPdf'])->name('report.monthly.pdf');
     Route::get('/bill/export', [BillController::class, 'export'])->name('bill.export');
-
-    });
+    Route::get('/usage/export', [UsageController::class, 'export'])->name('usage.export');
+    
+});
 
 require __DIR__.'/auth.php';

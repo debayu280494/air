@@ -48,6 +48,75 @@
 
     </div>
 
+    <div class="bg-green-50 p-4 rounded-lg shadow border border-green-200 mt-3">
+        <h3 class="font-bold text-green-700 mb-2">Export PDF Usage (Periode)</h3>
+
+        <div class="flex flex-wrap gap-3 items-end">
+
+            <!-- START -->
+            <div>
+                <label class="text-xs text-gray-500">Dari</label>
+                <div class="flex gap-1">
+                    <select wire:model="exportStartMonth" class="border p-2 rounded">
+                        <option value="">Bulan</option>
+                        @foreach($this->months as $num => $name)
+                            <option value="{{ $num }}">{{ $name }}</option>
+                        @endforeach
+                    </select>
+
+                    <select wire:model="exportStartYear" class="border p-2 rounded">
+                        <option value="">Tahun</option>
+                        @foreach($years as $y)
+                            <option value="{{ $y }}">{{ $y }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <!-- END -->
+            <div>
+                <label class="text-xs text-gray-500">Sampai</label>
+                <div class="flex gap-1">
+                    <select wire:model="exportEndMonth" class="border p-2 rounded">
+                        <option value="">Bulan</option>
+                        @foreach($this->months as $num => $name)
+                            <option value="{{ $num }}">{{ $name }}</option>
+                        @endforeach
+                    </select>
+
+                    <select wire:model="exportEndYear" class="border p-2 rounded">
+                        <option value="">Tahun</option>
+                        @foreach($years as $y)
+                            <option value="{{ $y }}">{{ $y }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <!-- STATUS -->
+            <select wire:model="exportStatus" class="border p-2 rounded">
+                <option value="">Semua Status</option>
+                <option value="lunas">Lunas</option>
+                <option value="belum">Belum</option>
+            </select>
+
+            <!-- GROUP -->
+            <select wire:model="exportGroup" class="border p-2 rounded">
+                <option value="">Semua Grup</option>
+                @foreach($groups as $g)
+                    <option value="{{ $g }}">{{ $g }}</option>
+                @endforeach
+            </select>
+
+            <!-- BUTTON -->
+            <button wire:click="exportPdf"
+                class="bg-green-600 text-white px-4 py-2 rounded">
+                Export PDF
+            </button>
+
+        </div>
+    </div>
+
     
 
     {{-- ================= MODAL ================= --}}
@@ -246,3 +315,15 @@
     </div>
 
 </div>
+
+<script>
+document.addEventListener('livewire:init', () => {
+
+    Livewire.on('open-pdf', (event) => {
+        let data = Array.isArray(event) ? event[0] : event;
+
+        window.open(data.url, '_blank');
+    });
+
+});
+</script>

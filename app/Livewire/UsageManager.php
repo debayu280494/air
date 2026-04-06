@@ -33,6 +33,13 @@ class UsageManager extends Component
     public $filterStatus = '';
     public $filterGroup = '';
 
+    public $exportStartMonth;
+    public $exportStartYear;
+    public $exportEndMonth;
+    public $exportEndYear;
+    public $exportStatus;
+    public $exportGroup;
+
     // FORM
     public $usage_id;
     public $customer_id;
@@ -388,7 +395,32 @@ class UsageManager extends Component
         ];
     }
 
-    
+    public function exportPdf()
+    {
+        if (
+            !$this->exportStartMonth ||
+            !$this->exportStartYear ||
+            !$this->exportEndMonth ||
+            !$this->exportEndYear
+        ) {
+            $this->dispatch('notify', [
+                'type' => 'error',
+                'message' => 'Periode export wajib lengkap'
+            ]);
+            return;
+        }
+
+        $url = route('usage.export', [
+            'start_month' => $this->exportStartMonth,
+            'start_year' => $this->exportStartYear,
+            'end_month' => $this->exportEndMonth,
+            'end_year' => $this->exportEndYear,
+            'status' => $this->exportStatus,
+            'group' => $this->exportGroup,
+        ]);
+
+        $this->dispatch('open-pdf', url: $url);
+    }
 
     public function resetFilter()
     {
