@@ -210,8 +210,20 @@ class UsageManager extends Component
 
     private function storeUsage()
     {
-        $usageValue = $this->meter_end - $this->meter_start;
-        $total = $usageValue * 5000;
+        $usageValue = max(0, $this->meter_end - $this->meter_start);
+
+        // ambil customer + service
+        $customer = Customer::with('service')->find($this->customer_id);
+
+        $price = $customer->service->price_per_meter ?? 0;
+        $maintenance = $customer->service->maintenance_fee ?? 0;
+
+        // LOGIC BARU SESUAI KEBUTUHAN
+        if ($usageValue > 0) {
+            $total = $usageValue * $price;
+        } else {
+            $total = $maintenance;
+        }
 
         $usage = Usage::updateOrCreate(
             ['id' => $this->usage_id],

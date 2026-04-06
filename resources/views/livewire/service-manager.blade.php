@@ -47,7 +47,7 @@
                     <th class="px-4 py-3">No</th>
                     <th class="px-4 py-3">Nama</th>
                     <th class="px-4 py-3">Tarif</th>
-                    <th class="px-4 py-3">Perawatan</th>
+                    <th class="px-4 py-3">Abonemen</th>
                     <th class="px-4 py-3 text-center">Aksi</th>
                 </tr>
             </thead>

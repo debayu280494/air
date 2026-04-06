@@ -16,14 +16,27 @@ class BillManager extends Component
     public $groups = [];
 
     public $search = '';
-    public $filterStatus = '';
+    // FILTER TABEL
     public $filterMonth = '';
     public $filterYear = '';
     public $filterGroup = '';
+    public $filterStatus = '';
+
+    // FILTER EXPORT
+    public $exportStartDate;
+    public $exportEndDate;
+    public $exportGroup;
 
     // PAYMENT
     public $selectedBill;
-    public $payment_method;
+
+    public $payment_method = 'cash';
+    public $paymentMethods = [
+        'cash' => 'Cash',
+        'transfer' => 'Transfer',
+        'netzme' => 'QRIS Netzme',
+        'qris' => 'QRIS BRI',
+    ];
     public $paid_at;
     public $showPaymentModal = false;
 
@@ -68,7 +81,7 @@ class BillManager extends Component
         if (!$bill) return;
 
         $this->selectedBill = $bill;
-        $this->payment_method = 'cash';
+        $this->payment_method = array_key_first($this->paymentMethods);
         $this->paid_at = date('Y-m-d');
         $this->showPaymentModal = true;
     }
@@ -76,7 +89,7 @@ class BillManager extends Component
     public function processPayment()
     {
         $this->validate([
-            'payment_method' => 'required',
+            'payment_method' => 'required|in:' . implode(',', array_keys($this->paymentMethods)),
             'paid_at' => 'required|date'
         ]);
 
@@ -156,6 +169,43 @@ class BillManager extends Component
             ->when($this->filterYear !== '', function ($q) {
                 $q->where('year', (int) $this->filterYear);
             });
+    }
+
+    public function closePaymentModal()
+    {
+        $this->reset([
+            'selectedBill',
+            'payment_method',
+            'paid_at',
+            'showPaymentModal'
+        ]);
+    }
+
+    public function exportPdf()
+    {
+        if (!$this->exportStartDate || !$this->exportEndDate) {
+            $this->dispatch('notify', [
+                'type' => 'error',
+                'message' => 'Tanggal export wajib diisi'
+            ]);
+            return;
+        }
+
+        if ($this->exportEndDate < $this->exportStartDate) {
+            $this->dispatch('notify', [
+                'type' => 'error',
+                'message' => 'Tanggal akhir tidak boleh kurang dari tanggal mulai'
+            ]);
+            return;
+        }
+
+        $url = route('bill.export', [
+            'start_date' => $this->exportStartDate,
+            'end_date' => $this->exportEndDate,
+            'group' => $this->exportGroup,
+        ]);
+
+        $this->dispatch('open-pdf', url: $url);
     }
 
     public function render()

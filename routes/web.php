@@ -9,6 +9,7 @@ use App\Livewire\ProfilePage;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\BillController;
 
 // 🔥 ROOT DOMAIN (FIX 404)
 Route::get('/', function () {
@@ -43,6 +44,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/laporan/bulanan', [ReportController::class, 'monthly'])->name('report.monthly');
 
     Route::get('/laporan/bulanan/pdf', [ReportController::class, 'monthlyPdf'])->name('report.monthly.pdf');
-});
+    Route::get('/bill/export', [BillController::class, 'export'])->name('bill.export');
+
+    });
 
 require __DIR__.'/auth.php';

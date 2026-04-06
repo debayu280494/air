@@ -4,42 +4,80 @@
     <div class="p-6 space-y-4">
 
         <!-- FILTER -->
-        <div class="flex flex-wrap gap-3 items-center bg-white p-4 rounded-lg shadow">
+        <div class="bg-white p-4 rounded-lg shadow">
+            <h3 class="font-bold mb-2">Filter Data</h3>
 
-            <input type="text"
-                wire:model.live.debounce.300ms="search"
-                placeholder="Cari customer..."
-                class="border p-2 rounded w-64">
+            <div class="flex flex-wrap gap-3">
 
-            <select wire:model.live="filterMonth" class="border p-2 rounded">
-                <option value="">Semua Bulan</option>
-                @for($i=1; $i<=12; $i++)
-                    <option value="{{ $i }}">
-                        {{ \Carbon\Carbon::create()->month($i)->translatedFormat('F') }}
-                    </option>
-                @endfor
-            </select>
+                <input type="text"
+                    wire:model.live.debounce.300ms="search"
+                    placeholder="Cari customer..."
+                    class="border p-2 rounded w-64">
 
-            <select wire:model.live="filterYear" class="border p-2 rounded">
-                <option value="">Semua Tahun</option>
-                @foreach(range(date('Y')-5, date('Y')+1) as $y)
-                    <option value="{{ $y }}">{{ $y }}</option>
-                @endforeach
-            </select>
+                <select wire:model.live="filterMonth" class="border p-2 rounded">
+                    <option value="">Semua Bulan</option>
+                    @for($i=1; $i<=12; $i++)
+                        <option value="{{ $i }}">
+                            {{ \Carbon\Carbon::create()->month($i)->translatedFormat('F') }}
+                        </option>
+                    @endfor
+                </select>
 
-            <select wire:model.live="filterGroup" class="border p-2 rounded">
-                <option value="">Semua Grup</option>
-                @foreach($groups as $g)
-                    <option value="{{ $g }}">{{ $g }}</option>
-                @endforeach
-            </select>
+                <select wire:model.live="filterYear" class="border p-2 rounded">
+                    <option value="">Semua Tahun</option>
+                    @foreach(range(date('Y')-5, date('Y')+1) as $y)
+                        <option value="{{ $y }}">{{ $y }}</option>
+                    @endforeach
+                </select>
 
-            <select wire:model.live="filterStatus" class="border p-2 rounded">
-                <option value="">Semua Status</option>
-                <option value="belum">Belum Bayar</option>
-                <option value="lunas">Lunas</option>
-            </select>
+                <select wire:model.live="filterGroup" class="border p-2 rounded">
+                    <option value="">Semua Grup</option>
+                    @foreach($groups as $g)
+                        <option value="{{ $g }}">{{ $g }}</option>
+                    @endforeach
+                </select>
 
+                <select wire:model.live="filterStatus" class="border p-2 rounded">
+                    <option value="">Semua Status</option>
+                    <option value="belum">Belum Bayar</option>
+                    <option value="lunas">Lunas</option>
+                </select>
+
+            </div>
+        </div>
+
+        <div class="bg-red-50 p-4 rounded-lg shadow mt-4 border border-red-200">
+            <h3 class="font-bold mb-2 text-red-600">Export PDF</h3>
+
+            <div class="flex flex-wrap gap-3 items-center">
+
+                <div>
+                    <label class="text-xs text-gray-500">Tanggal Mulai</label>
+                    <input type="date" wire:model="exportStartDate" class="border p-2 rounded">
+                </div>
+
+                <div>
+                    <label class="text-xs text-gray-500">Tanggal Akhir</label>
+                    <input type="date" wire:model="exportEndDate" class="border p-2 rounded">
+                </div>
+
+                <div>
+                    <label class="text-xs text-gray-500">Grup</label>
+                    <select wire:model="exportGroup" class="border p-2 rounded">
+                        <option value="">Semua Grup</option>
+                        @foreach($groups as $g)
+                            <option value="{{ $g }}">{{ $g }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- BUTTON EXPORT --}}
+                <button wire:click="exportPdf"
+                    class="bg-red-600 text-white px-4 py-2 rounded mt-4">
+                    Export PDF
+                </button>
+
+            </div>
         </div>
 
         <!-- TABLE -->
@@ -88,7 +126,7 @@
 
                         <td class="p-3 text-center text-xs">
                             @if($bill->status == 'lunas')
-                                {{ strtoupper($bill->payment_method) }} <br>
+                                {{ $paymentMethods[$bill->payment_method] ?? '-' }} <br>
                                 {{ $bill->paid_at }}
                             @else
                                 -
@@ -144,20 +182,27 @@
             <h2 class="text-lg font-bold mb-3">Pembayaran</h2>
 
             <select wire:model="payment_method" class="w-full border p-2 mb-2">
-                <option value="cash">Cash</option>
-                <option value="transfer">Transfer</option>
+                @foreach($paymentMethods as $key => $label)
+                    <option value="{{ $key }}">{{ $label }}</option>
+                @endforeach
             </select>
 
             <input type="date" wire:model="paid_at" class="w-full border p-2 mb-3">
 
-            <button wire:click="processPayment"
-                wire:loading.attr="disabled"
-                class="bg-green-500 text-white px-3 py-2 rounded w-full">
+            <div class="flex flex-col gap-2">
+                <button wire:click="processPayment"
+                    wire:loading.attr="disabled"
+                    class="bg-green-500 text-white px-3 py-2 rounded w-full">
 
-                <span wire:loading.remove>Simpan</span>
-                <span wire:loading>Memproses...</span>
+                    <span wire:loading.remove>Simpan</span>
+                    <span wire:loading>Memproses...</span>
+                </button>
 
-            </button>
+                <button wire:click="closePaymentModal"
+                    class="bg-gray-400 text-white px-3 py-2 rounded w-full">
+                    Batal
+                </button>
+            </div>
 
         </div>
     </div>
@@ -172,7 +217,6 @@
 document.addEventListener('livewire:init', () => {
 
     Livewire.on('notify', (event) => {
-
         let data = Array.isArray(event) ? event[0] : event;
 
         Swal.fire({
@@ -184,11 +228,16 @@ document.addEventListener('livewire:init', () => {
             timer: 2500,
             timerProgressBar: true
         });
+    });
 
+    Livewire.on('open-pdf', (event) => {
+        let data = Array.isArray(event) ? event[0] : event;
+        window.open(data.url, '_blank');
     });
 
 });
-
+</script>
+<script>
 // CONFIRM DELETE
 window.confirmDelete = function(id) {
     Swal.fire({
@@ -204,3 +253,4 @@ window.confirmDelete = function(id) {
     });
 }
 </script>
+
