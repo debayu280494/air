@@ -31,8 +31,10 @@ class BillController extends Controller
 
         $bills = $query->get();
 
-        // 🔥 GROUPING
-        $grouped = $bills->groupBy(fn($b) => $b->customer->group_name ?? '-');
+        // 🔥 GROUPING + SORT A-Z
+        $grouped = $bills
+            ->groupBy(fn($b) => $b->customer->group_name ?? '-')
+            ->sortKeys();
 
         // 🔥 TOTAL PER METODE
         $methodTotals = $bills->groupBy('payment_method')
