@@ -112,13 +112,30 @@ class DashboardLive extends Component
             'pieData'   => $groupCustomers->pluck('total_customer')->values(),
 
             // BAR TAGIHAN
-            'barLabels' => $monthlyBill->pluck('bulan')->values(),
+            'barLabels' => $monthlyBill->pluck('bulan')
+                ->map(fn($b) => $this->namaBulan($b))
+                ->values(),
+
             'barData'   => $monthlyBill->pluck('total')->values(),
 
-            // 🔥 BAR PEMASUKAN
-            'incomeLabels' => $incomeMonthly->pluck('bulan')->values(),
+            'incomeLabels' => $incomeMonthly->pluck('bulan')
+                ->map(fn($b) => $this->namaBulan($b))
+                ->values(),
+
             'incomeData'   => $incomeMonthly->pluck('total')->values(),
         ]);
+    }
+
+    private function namaBulan($bulan)
+    {
+        $months = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
+            4 => 'April', 5 => 'Mei', 6 => 'Juni',
+            7 => 'Juli', 8 => 'Agustus', 9 => 'September',
+            10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+
+        return $months[(int)$bulan] ?? $bulan;
     }
 
     // ================= GROUP CUSTOMER =================
