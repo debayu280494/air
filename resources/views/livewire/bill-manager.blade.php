@@ -98,7 +98,7 @@
 
                 <tbody>
                     @foreach($bills as $bill)
-                    <tr class="border-t hover:bg-gray-50">
+                    <tr wire:key="bill-{{ $bill->id }}" class="border-t hover:bg-gray-50">
 
                         <td class="p-3">
                             {{ optional($bill->customer)->name ?? '-' }}
@@ -146,7 +146,9 @@
                             </a> -->
 
                             @if($bill->status == 'belum')
-                                <button wire:click="openPayment({{ $bill->id }})"
+                                <button 
+                                    wire:click="openPayment({{ $bill->id }})"
+                                    wire:key="pay-{{ $bill->id }}"
                                     class="bg-green-500 text-white px-3 py-1 rounded text-xs"
                                     wire:loading.attr="disabled">
                                     Bayar
