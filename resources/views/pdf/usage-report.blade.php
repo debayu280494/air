@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Laporan Pemakaian</title>
+    <title>Laporan Tagihan Pemakaian</title>
 
     <style>
         body { font-family: sans-serif; font-size: 12px; }

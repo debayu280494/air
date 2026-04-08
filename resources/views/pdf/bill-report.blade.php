@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Laporan Tagihan</title>
+    <title>Laporan Pemasukan Air</title>
 
     <style>
         body {
