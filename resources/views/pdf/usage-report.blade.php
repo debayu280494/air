@@ -27,7 +27,7 @@ $end = ($request->end_month && $request->end_year)
     : '-';
 @endphp
 
-<h2 style="text-align:center;">LAPORAN PEMAKAIAN AIR</h2>
+<h2 style="text-align:center;">LAPORAN TAGIHAN AIR</h2>
 
 <hr>
 

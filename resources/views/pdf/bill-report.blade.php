@@ -71,7 +71,7 @@
             <img src="{{ public_path('logo.png') }}" width="70">
         </td>
         <td>
-            <h2 style="margin:0;">LAPORAN TAGIHAN AIR</h2>
+            <h2 style="margin:0;">LAPORAN PEMASUKAN AIR</h2>
             <p style="margin:0;">Periode: {{ $start }} s/d {{ $end }}</p>
             <p style="margin:0;">Dicetak: {{ \Carbon\Carbon::now()->translatedFormat('d F Y H:i') }}</p>
         </td>
