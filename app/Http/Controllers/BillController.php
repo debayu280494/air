@@ -34,6 +34,9 @@ class BillController extends Controller
         // 🔥 GROUPING + SORT A-Z
         $grouped = $bills
             ->groupBy(fn($b) => $b->customer->group_name ?? '-')
+            ->map(function ($group) {
+                return $group->sortBy('paid_at'); // urut dari tanggal terkecil
+            })
             ->sortKeys();
 
         // 🔥 TOTAL PER METODE
