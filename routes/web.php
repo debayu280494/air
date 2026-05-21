@@ -38,6 +38,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/tagihan/{id}/pdf', [InvoiceController::class, 'download'])->name('invoice.pdf');
 
+    Route::get('/tagihan/{id}/jpg', [InvoiceController::class, 'downloadJpg'])->name('invoice.jpg');
+
     // Profile dummy
     Route::get('/profile', ProfilePage::class)->name('profile.edit');
 

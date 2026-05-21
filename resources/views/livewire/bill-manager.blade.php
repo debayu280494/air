@@ -136,6 +136,8 @@
                         <td class="p-3 flex gap-2 justify-center">
 
                             <a href="{{ route('invoice.show', $bill->id) }}"
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 class="bg-blue-500 text-white px-3 py-1 rounded text-xs">
                                 Detail
                             </a>
