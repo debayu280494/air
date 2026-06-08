@@ -224,7 +224,7 @@
     @endif
 
     <button class="print-btn" onclick="printInvoice()">Print Invoice</button>
-    <button class="download-btn" type="button" onclick="downloadInvoiceJpg()">Download Invoice</button>
+    <button class="download-btn" type="button" onclick="downloadInvoiceJpg()">Cetak Invoice</button>
 
 </div>
 
