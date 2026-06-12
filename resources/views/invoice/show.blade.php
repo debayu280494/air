@@ -170,11 +170,11 @@
     <div class="header">
         <div>
             <img src="{{ asset('logo.png') }}" width="80" alt="Logo">
-            <div class="title">INVOICE</div>
+            <div class="title">TAGIHAN</div>
         </div>
 
         <div>
-            <div class="title">INVOICE</div>
+            <div class="title">TAGIHAN</div>
             <div>No: INV-{{ $bill->id }}</div>
         </div>
 
