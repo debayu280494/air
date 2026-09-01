@@ -187,7 +187,7 @@ class UsageManager extends Component
     {
         $this->validate([
             'customer_id' => 'required|exists:customers,id',
-            'tanggal_pencatatan' => 'required|date',
+            'tanggal_pencatatan' => 'nullable|date',
             'month' => 'required|numeric|min:1|max:12',
             'year' => 'required|numeric',
             'meter_end' => [
