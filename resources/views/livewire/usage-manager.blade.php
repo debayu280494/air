@@ -139,6 +139,22 @@
                     @endforeach
                 </select>
 
+                {{-- TANGGAL PENCATATAN --}}
+                <label for="tanggal_pencatatan" class="block text-sm font-medium mb-1">
+                    Tanggal Pencatatan
+                </label>
+                <input type="date"
+                    id="tanggal_pencatatan"
+                    wire:model.live="tanggal_pencatatan"
+                    class="w-full border p-2 rounded">
+                <p class="text-xs text-gray-500 mt-1 mb-2">
+                    Pilih tanggal saat meter pelanggan dibaca atau dicatat (contoh: 15 September 2026).
+                </p>
+
+                @error('tanggal_pencatatan')
+                    <div class="text-red-500 text-xs">{{ $message }}</div>
+                @enderror
+
                 {{-- BULAN --}}
                 <select wire:model.live="month" class="w-full mb-2 border p-2 rounded">
                     <option value="">Pilih Bulan</option>
@@ -222,6 +238,7 @@
                     <th class="w-12 p-3 text-center">No</th>
                     <th class="w-48 p-3">Pelanggan</th>
                     <th class="w-32 p-3">Grup</th>
+                    <th class="w-36 p-3">Tanggal Catat</th>
                     <th class="w-40 p-3">Bulan</th>
                     <th class="w-32 p-3 text-center">Meter</th>
                     <th class="w-24 p-3 text-center">Pemakaian</th>
@@ -246,6 +263,10 @@
 
                         <td class="p-3 truncate">
                             {{ $u->customer->group_name ?? '-' }}
+                        </td>
+
+                        <td class="p-3">
+                            {{ $u->tanggal_pencatatan?->locale('id')->translatedFormat('d F Y') ?? '-' }}
                         </td>
 
                         <td class="p-3">
@@ -300,10 +321,10 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="9" class="text-center p-6 text-gray-500">
-                            Data tidak ditemukan
-                        </td>
-                    </tr>
+                    <td colspan="10" class="text-center p-6 text-gray-500">
+                        Data tidak ditemukan
+                    </td>
+                </tr>
                 @endforelse
             </tbody>
         </table>

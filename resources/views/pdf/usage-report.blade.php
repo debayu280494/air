@@ -55,6 +55,7 @@ $end = ($request->end_month && $request->end_year)
         <tr>
             <th>No</th>
             <th>Customer</th>
+            <th>Tanggal Catat</th>
             <th>Periode</th>
             <th>Meter</th>
             <th>Pemakaian</th>
@@ -73,6 +74,9 @@ $end = ($request->end_month && $request->end_year)
             <td>{{ $no++ }}</td>
             <td>{{ $u->customer->name ?? '-' }}</td>
             <td>
+                {{ $u->tanggal_pencatatan ? Carbon::parse($u->tanggal_pencatatan)->locale('id')->translatedFormat('d F Y') : '-' }}
+            </td>
+            <td>
                 {{ Carbon::create()->month($u->month)->translatedFormat('F') }} {{ $u->year }}
             </td>
             <td>{{ $u->meter_start }} - {{ $u->meter_end }}</td>
@@ -83,7 +87,7 @@ $end = ($request->end_month && $request->end_year)
     @endforeach
 
     <tr>
-        <td colspan="5"><strong>Total Grup</strong></td>
+        <td colspan="6"><strong>Total Grup</strong></td>
         <td colspan="2"><strong>Rp {{ number_format($total) }}</strong></td>
     </tr>
 

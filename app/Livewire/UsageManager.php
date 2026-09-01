@@ -43,6 +43,7 @@ class UsageManager extends Component
     // FORM
     public $usage_id;
     public $customer_id;
+    public $tanggal_pencatatan;
     public $month;
     public $year;
 
@@ -100,7 +101,7 @@ class UsageManager extends Component
     private function buildUsageQuery()
     {
         return Usage::query()
-            ->select('id','customer_id','month','year','meter_start','meter_end','usage','total_bill')
+            ->select('id','customer_id','tanggal_pencatatan','month','year','meter_start','meter_end','usage','total_bill')
             ->with([
                 'customer:id,name,group_name',
                 'bill:id,usage_id,status'
@@ -186,6 +187,7 @@ class UsageManager extends Component
     {
         $this->validate([
             'customer_id' => 'required|exists:customers,id',
+            'tanggal_pencatatan' => 'required|date',
             'month' => 'required|numeric|min:1|max:12',
             'year' => 'required|numeric',
             'meter_end' => [
@@ -236,6 +238,7 @@ class UsageManager extends Component
             ['id' => $this->usage_id],
             [
                 'customer_id' => $this->customer_id,
+                'tanggal_pencatatan' => $this->tanggal_pencatatan,
                 'month' => $this->month,
                 'year' => $this->year,
                 'meter_start' => $this->meter_start,
@@ -292,6 +295,7 @@ class UsageManager extends Component
         $this->fill([
             'usage_id' => $data->id,
             'customer_id' => $data->customer_id,
+            'tanggal_pencatatan' => optional($data->tanggal_pencatatan)->format('Y-m-d'),
             'month' => $data->month,
             'year' => $data->year,
             'meter_start' => $data->meter_start,
@@ -350,6 +354,7 @@ class UsageManager extends Component
         $this->reset([
             'usage_id',
             'customer_id',
+            'tanggal_pencatatan',
             'month',
             'year',
             'meter_start',

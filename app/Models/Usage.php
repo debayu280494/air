@@ -8,6 +8,7 @@ class Usage extends Model
 {
     protected $fillable = [
         'customer_id',
+        'tanggal_pencatatan',
         'month',
         'year',
         'meter_start',
@@ -18,6 +19,7 @@ class Usage extends Model
     ];
 
     protected $casts = [
+        'tanggal_pencatatan' => 'date',
         'meter_start' => 'integer',
         'meter_end' => 'integer',
         'usage' => 'integer',
